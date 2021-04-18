@@ -18,8 +18,10 @@ if("car" %in% rownames(installed.packages()) == FALSE) {install.packages("car",r
 try(suppressPackageStartupMessages(library(car,quietly = TRUE,warn.conflicts = FALSE)),silent = TRUE)
 if("sandwich" %in% rownames(installed.packages()) == FALSE) {install.packages("sandwich",repos="http://cran.r-project.org")}
 try(suppressPackageStartupMessages(library(sandwich,quietly = TRUE,warn.conflicts = FALSE)),silent = TRUE)
-install.packages("ivreg")
-library(ivreg)
+if("fixest" %in% rownames(installed.packages()) == FALSE) {install.packages("fixest",repos="http://cran.r-project.org")}
+try(suppressPackageStartupMessages(library(fixest,quietly = TRUE,warn.conflicts = FALSE)),silent = TRUE)
+
+
 # 0.2 Define paths
 
 # Path Zago
@@ -61,20 +63,55 @@ choice <- choice %>% mutate(s_0 = case_when(market == 1 ~ s_01, market == 2 ~ s_
 # Aggregating data:
 
 datos_agg <- choice %>% distinct(schoolid, .keep_all = T) %>% 
-     select(market, schoolid, outside, price, quality, rural, laica, pub, v_u, porc_zona,
+     select(market, schoolid, outside, price, quality, rural, laica, pub, jec, v_u, porc_zona,
             share_prio, s_t, s_0, y_inv) %>% filter(outside == 0)
 
 #
 
 # 1.2 MultiLinear Logit OLS estimation:
 
-reg_ols <- glm(data = datos_agg, y_inv ~ price + quality + rural + laica + pub, 
-                    family = multinomial(link = "logit"))
+reg_ols <- lm(y_inv ~ price + quality + rural + laica + pub + jec, data = datos_agg)
 
 
 summary(reg_ols)
-stargazer(reg_ols)
 
 # 2SLS:
 
+# a)
+reg_iv_1 <- feols(y_inv ~ rural + pub + jec + laica | price + quality ~ v_u + porc_zona + share_prio,
+                  datos_agg, se = "hetero")
 
+summary(reg_iv_1)
+
+# b)
+datos_iv <- datos_agg %>% group_by(market) %>% mutate(agg_rural = sum(rural), agg_pub = sum(pub),
+                                                       agg_laica = sum(laica), agg_jec = sum(jec)) %>%
+     ungroup() %>% mutate(sum_rural = agg_rural - rural, sum_pub = agg_pub - pub, sum_laica = agg_laica - laica,
+                          sum_jec = agg_jec - jec)
+
+reg_iv_2 <- feols(y_inv ~ rural + pub + jec + laica | price + quality ~ sum_rural + sum_pub 
+                  + sum_laica + sum_jec, datos_iv, se = "hetero")
+
+summary(reg_iv_2)
+
+# c)
+datos_iv <- datos_iv %>% group_by(market) %>% mutate(n_comp = n()-1) %>% ungroup() %>% 
+     mutate(avg_rural = sum_rural/n_comp, avg_laica = sum_laica/n_comp, avg_pub = sum_pub/n_comp,
+            avg_jec = sum_jec/n_comp)
+
+reg_iv_3 <- feols(y_inv ~ rural + pub + jec + laica | price + quality ~ avg_rural + avg_pub 
+                  + avg_laica + avg_jec, datos_iv, se = "hetero")
+
+summary(reg_iv_3)
+
+# d)
+reg_iv_4 <- feols(y_inv ~ rural + pub + jec + laica | price + quality ~ sum_rural + sum_pub 
+                  + sum_laica + sum_jec + v_u + porc_zona + share_prio, datos_iv, se = "hetero")
+
+summary(reg_iv_4)
+
+# e)
+reg_iv_5 <- feols(y_inv ~ rural + pub + jec + laica | price + quality ~ avg_rural + avg_pub 
+                  + avg_laica + avg_jec + v_u + porc_zona + share_prio, datos_iv, se = "hetero")
+
+summary(reg_iv_5)
