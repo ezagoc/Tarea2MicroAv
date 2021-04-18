@@ -64,7 +64,7 @@ datos_agg <- choice %>% distinct(schoolid, .keep_all = T) %>%
      select(market, schoolid, outside, price, quality, rural, laica, pub, v_u, porc_zona,
             share_prio, s_t, s_0, y_inv) %>% filter(outside == 0)
 
-
+#
 
 # 1.2 MultiLinear Logit OLS estimation:
 
