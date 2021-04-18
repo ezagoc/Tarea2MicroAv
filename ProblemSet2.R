@@ -38,41 +38,38 @@ datos <- as.data.frame(read.csv(path, header = T, stringsAsFactors = F))
 
 # 1.0 Aggregate the data at school level. Construct Market Shares
 
-# Constructing market shares (#students in a certain school j in market t/#students total living in T):
+# Constructing market shares (#students in a certain school j in market t/tota students living in t):
 # We must consider the students that decide for the outside option
-# And since we are not considering the characteristics of the outside option, 
-# we can eliminate them. However we must count them for Mt
+
+choice <- datos %>% filter(choice == 1) %>% add_count(market) %>% rename(M_t = n) %>%
+     add_count(schoolid) %>% rename(n_schools = n) %>% mutate(s_t = n_schools/M_t)
 
 # We obtain the market share for students that prefer the outside option
 
-outsiders <- datos %>% filter(outside == 1) %>% add_count(market) %>% 
-     rename(M_0 = n)
+outsiders <- choice %>% filter(outside == 1) %>% distinct(market, .keep_all = T)
+s_01 <- outsiders[1,"s_t"]
+s_02 <- outsiders[2,"s_t"]
+s_03 <- outsiders[3,"s_t"]
+s_04 <- outsiders[4,"s_t"]
+s_05 <- outsiders[5,"s_t"]
 
-datos <- datos %>% add_count(market) %>% rename(M_t = n) %>% 
-     filter(outside == 0)
-
-# Now each student goes to a school inside her market, so
-
-datos <- datos %>% add_count(schoolid) %>% rename(n_students = n) %>% 
-     mutate(mktshare = n_students/M_t) %>% mutate(M_0 = case_when(market == 1 ~ 1504,
-                                                                  market == 2 ~ 2610,
-                                                                  market == 3 ~ 1509,
-                                                                  market == 4 ~ 1098,
-                                                                  market == 5 ~ 3117)) %>%
-     mutate(mktshare_0 = M_0/M_t) %>% mutate(y_inv = log(mktshare) - log(mktshare_0))
+choice <- choice %>% mutate(s_0 = case_when(market == 1 ~ s_01, market == 2 ~ s_02, 
+                                      market == 3 ~ s_03, market == 4 ~ s_04,
+                                      market == 5 ~ s_05)) %>% 
+     mutate(y_inv = log(s_t) - log(s_0))
 
 # Aggregating data:
 
-datos_agg <- datos %>% distinct(schoolid, .keep_all = T) %>% 
-     select(market, schoolid, price, quality, rural, laica, pub, v_u, porc_zona,
-            share_prio, mktshare, y_inv)
+datos_agg <- choice %>% distinct(schoolid, .keep_all = T) %>% 
+     select(market, schoolid, outside, price, quality, rural, laica, pub, v_u, porc_zona,
+            share_prio, s_t, s_0, y_inv) %>% filter(outside == 0)
 
 
 
 # 1.2 MultiLinear Logit OLS estimation:
 
-reg_ols <- glm(data = datos, y_inv ~ price + quality + rural + laica + pub, 
-                    family = binomial(link = "logit"))
+reg_ols <- glm(data = datos_agg, y_inv ~ price + quality + rural + laica + pub, 
+                    family = multinomial(link = "logit"))
 
 
 summary(reg_ols)
