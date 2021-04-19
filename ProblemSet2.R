@@ -115,3 +115,55 @@ reg_iv_5 <- feols(y_inv ~ rural + pub + jec + laica | price + quality ~ avg_rura
                   + avg_laica + avg_jec + v_u + porc_zona + share_prio, datos_iv, se = "hetero")
 
 summary(reg_iv_5)
+
+
+# INDIVIDUAL DATA: Likelihood function
+
+# Likelihood
+
+f_logit <- function(datos,beta){
+        print(beta)
+        epsilon<-1e-20#sowedon't takelogofzero.
+        
+        W <- datos %>% 
+                select(price, quality, pub, rural, laica, jec, distance) %>% 
+                as.matrix() 
+        W <- as.matrix(cbind(1,W))
+        
+        
+        Wb <- exp(W%*%beta)
+        
+        data_ind <- cbind(datos,"Wb"=Wb)
+        data_ind <- data_ind %>% mutate(Wb=ifelse(schoolid %in% 1:5,1,Wb))
+        
+        data_ind <- data_ind %>% 
+                group_by(studentid) %>% 
+                mutate(sumaExp=sum(Wb))  %>% 
+                mutate(prob=Wb/sumaExp)  
+        
+        
+        choice <- data_ind %>% 
+                pull(choice)
+        prob <- data_ind %>% 
+                pull(prob)
+        
+        log_lik<- sum(choice%*%log(epsilon+prob))
+        
+        
+        return(-sum(log_lik))
+        
+}
+
+# Nelder-Mead
+
+start_time<-Sys.time()
+a1<-optim(par=unlist(c(coef(reg1_2),1)),fn=f_logit,datos=datos,control=list(trace=1,maxit=500),
+          method = "Nelder-Mead")
+# Time 
+Sys.time()-start_time
+
+
+# 3) Newton with Hessian and Gradient
+
+
+
