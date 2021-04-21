@@ -5,7 +5,7 @@ clear; clc;
 %%%%%%%%%
 
 %Zago
-%cd ('C:\Users\lalo-\OneDrive\Documentos\Semestre 10\Microeconometria Avanzada\Tarea 2\Datos')
+%cd ('C:/Users/lalo-/OneDrive/Documentos/GitHub/ProblemSet2')
 
 %Stein
 cd('C:/Users/ferna/OneDrive/Escritorio/ProblemSet2')
