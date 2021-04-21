@@ -1,0 +1,86 @@
+clear; clc;
+
+%%%%%%%%%
+% Paths %
+%%%%%%%%%
+
+%Zago
+%cd ('C:\Users\lalo-\OneDrive\Documentos\Semestre 10\Microeconometria Avanzada\Tarea 2\Datos')
+
+%Stein
+cd('C:/Users/ferna/OneDrive/Escritorio/ProblemSet2')
+
+%Armando
+% cd()
+
+%%%%%%%%%%%%%
+% Read Data %
+%%%%%%%%%%%%%
+
+data = csvread('data_ps2_aux.csv',1,0);
+
+%%%%%%%%%%%%%%%%%%%%%
+% Declare Variables %
+%%%%%%%%%%%%%%%%%%%%%
+
+%First Part Obsevables
+mkt = data(:,1);
+id = data(:,2);
+choice = data(:,3);
+outside = data(:,4);
+dis = data(:,5);
+price = data(:,6);
+qual = data(:,7);
+rural = data(:,8);
+laica = data(:,9);
+pub = data(:,10);
+jec = data(:,11);
+
+%Merge into Matrix
+
+X = [mkt outside id price qual rural laica pub jec dis choice];
+
+%%%%%%%%%%%%%%%%
+% OPTIMIZATION %
+%%%%%%%%%%%%%%%%
+
+%Initial Values:
+
+%% Question 2
+beta_start_nm = [-0.23,-0.03,-1.175,-1.36,-0.40,-0.021,0.265,-0.094];
+tic 
+
+options = optimoptions(@fminunc,'Algorithm','quasi-newton','Display','iter','GradObj','off','HessUpdate','bfgs','UseParallel',false,'TolFun',1e-6,'TolX',1e-6,'MaxIter',1e6,'MaxFunEvals',1e6);
+options = optimset('Display','iter','TolX',1e-8,'TolFun',1e-8,'MaxIter',1e5,'MaxFunEvals',1e6);
+
+[est,fval,exitflag] = fminsearch(@(beta) LogLik(beta,X), beta_start_nm, options);
+
+toc
+
+%% Question 3
+tic
+beta_start_b = [-0.23,-0.03,-1.175,-1.36,-0.40,-0.021,0.265,-0.094];
+
+options = optimoptions(@fminunc,'Algorithm','quasi-newton','Display','iter','GradObj','off','HessUpdate','dfp','UseParallel',false,'TolFun',1e-6,'TolX',1e-6,'MaxIter',1e6,'MaxFunEvals',1e6);
+[beta_est_num,fval_num,exitflag,output,grad_num,hessian_num] = fminunc(@(beta) LogLik(beta,X), betas_start_b ,options);
+
+toc 
+
+%% Question 4
+tic
+
+options = optimoptions(@fminunc,'Algorithm','quasi-newton','Display','iter','GradObj','off','HessUpdate','bfgs','UseParallel',false,'TolFun',1e-6,'TolX',1e-6,'MaxIter',1e6,'MaxFunEvals',1e6);
+[beta_est_b,fval_b,exitflag,output,grad_b,hessian_b] = fminunc(@(beta) LogLik(beta,X), betas_start_b ,options);
+
+toc
+
+%% Question 5
+beta_start_b = [-0.23,-0.03,-1.175,-1.36,-0.40,-0.021,0.265,-0.094];
+% gradient(beta_start_b,X)
+% 
+
+tic 
+options = optimoptions(@fminunc,'Algorithm','quasi-newton','Display','iter','GradObj','on','HessUpdate','bfgs','UseParallel',false,'TolFun',1e-6,'TolX',1e-6,'MaxIter',1e6,'MaxFunEvals',1e6,'SpecifyObjectiveGradient',true);
+[beta_est_b,fval_b,exitflag,output] = fminunc(@(beta) ml_CG(beta,X), beta_start_b ,options);
+toc 
+
