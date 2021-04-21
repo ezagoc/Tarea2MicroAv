@@ -22,7 +22,8 @@ if("fixest" %in% rownames(installed.packages()) == FALSE) {install.packages("fix
 try(suppressPackageStartupMessages(library(fixest,quietly = TRUE,warn.conflicts = FALSE)),silent = TRUE)
 if("maxLik" %in% rownames(installed.packages()) == FALSE) {install.packages("maxLik",repos="http://cran.r-project.org")}
 try(suppressPackageStartupMessages(library(maxLik,quietly = TRUE,warn.conflicts = FALSE)),silent = TRUE)
-
+install.packages("lfe")
+library(lfe)
 
 # 0.2 Define paths
 
@@ -85,6 +86,8 @@ reg_iv_1 <- feols(y_inv ~ rural + pub + jec + laica | price + quality ~ v_u + po
 
 summary(reg_iv_1)
 
+summary(reg_iv_1, stage = 1)
+
 # b)
 datos_iv <- datos_agg %>% group_by(market) %>% mutate(agg_rural = sum(rural), agg_pub = sum(pub),
                                                        agg_laica = sum(laica), agg_jec = sum(jec)) %>%
@@ -96,6 +99,8 @@ reg_iv_2 <- feols(y_inv ~ rural + pub + jec + laica | price + quality ~ sum_rura
 
 summary(reg_iv_2)
 
+summary(reg_iv_2, stage = 1)
+
 # c)
 datos_iv <- datos_iv %>% group_by(market) %>% mutate(n_comp = n()-1) %>% ungroup() %>% 
      mutate(avg_rural = sum_rural/n_comp, avg_laica = sum_laica/n_comp, avg_pub = sum_pub/n_comp,
@@ -106,11 +111,15 @@ reg_iv_3 <- feols(y_inv ~ rural + pub + jec + laica | price + quality ~ avg_rura
 
 summary(reg_iv_3)
 
+summary(reg_iv_3, stage = 1)
+
 # d)
 reg_iv_4 <- feols(y_inv ~ rural + pub + jec + laica | price + quality ~ sum_rural + sum_pub 
                   + sum_laica + sum_jec + v_u + porc_zona + share_prio, datos_iv, se = "hetero")
 
 summary(reg_iv_4)
+
+summary(reg_iv_4, stage = 1)
 
 # e)
 reg_iv_5 <- feols(y_inv ~ rural + pub + jec + laica | price + quality ~ avg_rural + avg_pub 
@@ -118,6 +127,7 @@ reg_iv_5 <- feols(y_inv ~ rural + pub + jec + laica | price + quality ~ avg_rura
 
 summary(reg_iv_5)
 
+summary(reg_iv_5, stage = 1)
 
 # Stargazer table for LaTeX
 
@@ -127,5 +137,8 @@ stargazer(reg_ols, title = "OLS Estimation",
 
 etable(reg_iv_1, reg_iv_2, reg_iv_3, reg_iv_4, reg_iv_5, tex = T)
 
+
+
+# 10: IF OUR MATLAB CODE DOESN´T RUN
 
 

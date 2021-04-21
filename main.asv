@@ -53,7 +53,7 @@ tic
 options = optimoptions(@fminunc,'Algorithm','quasi-newton','Display','iter','GradObj','off','HessUpdate','bfgs','UseParallel',false,'TolFun',1e-6,'TolX',1e-6,'MaxIter',1e6,'MaxFunEvals',1e6);
 options = optimset('Display','iter','TolX',1e-8,'TolFun',1e-8,'MaxIter',1e5,'MaxFunEvals',1e6);
 
-[est,fval,exitflag,hessian_nm] = fminsearch(@(beta) log_like(beta,X), beta_start_nm, options);
+[est,fval,exitflag] = fminsearch(@(beta) log_like(beta,X), beta_start_nm, options);
 
 toc
 
